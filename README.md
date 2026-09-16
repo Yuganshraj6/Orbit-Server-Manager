@@ -100,3 +100,150 @@ Running a Minecraft server locally usually involves juggling batch scripts, find
 ---
 
 ## 🏗 Project Architecture
+
+OrbitServerManager/
+├── logo.png                # High-res UI header banner
+├── logo.ico                # Windows executable icon (multi-resolution)
+├── config.json             # Runtime profiles and user preferences (auto-generated)
+├── app.log                 # Rolling debug and error trace log
+├── requirements.txt        # Python dependency manifest
+├── version_info.txt        # PE metadata descriptor for PyInstaller
+├── server_manager.py       # Core server process, APIs, properties, and tunneling
+├── modrinth_api.py         # Modrinth v2 REST API client and updater engine
+└── main.py                 # CustomTkinter UI presentation and event orchestration
+
+
+---
+
+## 🚀 Installation & Running from Source
+
+### Step 1: Clone the Repository
+```powershell
+git clone [https://github.com/](https://github.com/)<YOUR_USERNAME>/OrbitServerManager.git
+cd OrbitServerManager
+Step 2: Set Up Virtual Environment
+PowerShell
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+Step 3: Install Required Dependencies
+PowerShell
+pip install -r requirements.txt
+Step 4: Launch Application
+PowerShell
+python main.py
+📦 Building Standalone Binary (.exe)
+Compile the entire project into a single, portable Windows .exe that includes all themes, icons, and dependencies:
+
+PowerShell
+# 1. Install PyInstaller
+pip install pyinstaller
+
+# 2. Extract CustomTkinter package assets location
+$ctk_dir = py -c "import customtkinter, os; print(os.path.dirname(customtkinter.__file__))"
+
+# 3. Compile standalone windowed executable
+py -m PyInstaller --noconfirm --onefile --windowed `
+    --name "OrbitServerManager" `
+    --icon "logo.ico" `
+    --add-data "$ctk_dir;customtkinter/" `
+    --add-data "logo.png;." `
+    --add-data "logo.ico;." `
+    --hidden-import "requests" `
+    --hidden-import "psutil" `
+    --hidden-import "packaging" `
+    --hidden-import "PIL" `
+    main.py
+After compilation finishes, your single-file executable will be ready at:
+
+Plaintext
+dist\OrbitServerManager.exe
+🧩 Module Breakdown
+server_manager.py
+Contains all operating system interactions, process lifecycle orchestration, and network communications:
+
+ProfileManager: CRUD operations on local server configuration profiles stored in config.json.
+
+JavaEnvironment: Scans the environment to match installed Java major version against chosen Minecraft releases.
+
+ServerDownloader: Fetches manifests from Mojang, PaperMC, and Fabric APIs with live stream progress callback.
+
+ServerPropertiesManager: Reads and writes Minecraft's standard key-value properties file.
+
+ServerProcess: Spawns and supervises non-blocking subprocess pipes (stdin, stdout, stderr).
+
+BackupManager: Creates compressed zip archives of world saves while filtering out session.lock.
+
+TaskScheduler: Background daemon running interval-based backup and server restart loops.
+
+PlayitTunnel: Manages the playit.exe subprocess lifecycle, parses claim tokens, and reads dynamic domain assignments.
+
+modrinth_api.py
+Dedicated client for interacting with the Modrinth v2 REST API:
+
+search_projects: Queries Modrinth projects with faceted loader and category filtering.
+
+resolve_best_version: Evaluates game version and loader compatibility to pick the right file release.
+
+resolve_dependencies: Recursively crawls and queues required third-party mods.
+
+check_update_for_file: Compares local file builds with upstream remote releases.
+
+Rate Limit Handling: Exponential backoff and retry mechanisms when encountering HTTP 429 errors.
+
+main.py
+Presentation and event coordination layer using CustomTkinter:
+
+Pure presentation layer: delegates all background tasks to daemon threads and processes updates through a thread-safe queue.Queue.
+
+Houses custom animated ToastManager sliding cards.
+
+Controls sidebar switching, file browsing, console updates, and layout resizing.
+
+⚙ Configuration Reference
+The application automatically generates and maintains a local config.json:
+
+JSON
+{
+    "settings": {
+        "default_ram_gb": 4,
+        "java_path_override": "",
+        "backup_dir": "backups",
+        "auto_start_last": false,
+        "last_selected_profile": "Survival-1.20"
+    },
+    "profiles": {
+        "Survival-1.20": {
+            "name": "Survival-1.20",
+            "folder_path": "C:\\Servers\\Survival",
+            "mc_version": "1.20.4",
+            "loader": "Paper",
+            "ram_gb": 6,
+            "jar_name": "server.jar"
+        }
+    }
+}
+🛠 Troubleshooting & Defensive Handling
+1. Port Conflict (Port 25565 already in use)
+Cause: Another Minecraft server, Docker container, or background Java task is already bound to the port.
+
+Resolution: Change the server-port value in the Setup & Config tab or close the conflicting application via Task Manager.
+
+2. Java Compatibility Warning
+Cause: Modern Minecraft (1.20.5+) requires Java 21+, while versions 1.18–1.20.4 require Java 17, and 1.16 or older typically run on Java 8.
+
+Resolution: Install the required JDK release and specify its executable path directly under App Settings ➔ Java Executable Path Override.
+
+3. Modrinth 429 Rate Limiting
+Cause: Rapid queries to the Modrinth API endpoints.
+
+Resolution: The internal API client automatically reads Retry-After headers and pauses requests with exponential backoff before surfacing errors.
+
+4. Application Logging
+If an unexpected issue occurs, inspect app.log in the application root directory for full stack traces and debug output.
+
+💜 Dedication
+Plaintext
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Made specially for someone who is special for The Dev. ✨
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Developed with care by @yugansh_raj96 / OrbitOmen.
